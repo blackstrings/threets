@@ -4,6 +4,7 @@ dist/bundle.js
 .idea/
 *.iml
 /node_modules
+/web/js/
 
 # Logs
 logs
