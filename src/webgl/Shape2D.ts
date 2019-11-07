@@ -42,9 +42,16 @@ export class Shape2D {
 	public getSideDirection(sideIndex: number): Vector3 {
 		const side: Line3 = this.getSide(sideIndex);
 		if(side){
-			return side.end.clone().sub(side.start).normalize();
+			return this.findSideDirection(side);
 		}
 		return null;
+	}
+
+	/** returns a normalized direction traveling from start to end */
+	public findSideDirection(side: Line3): Vector3 {
+		if(side){
+			return side.end.clone().sub(side.start).normalize();
+		}
 	}
 
 	public getSideCenter(sideIndex: number): Vector3 {
@@ -57,7 +64,7 @@ export class Shape2D {
 	public getSideVectorNormal(sideIndex: number): Vector3 {
 		const side: Line3 = this.getSide(sideIndex);
 		if(side){
-			const sideDir: Vector3 = this.getSideDirection(sideIndex);
+			const sideDir: Vector3 = this.findSideDirection(side);
 			if(sideDir){
 				VectorUtils.rotate90CCW(sideDir);
 				return sideDir;

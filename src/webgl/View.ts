@@ -61,9 +61,15 @@ export default class View {
 		mesh3D.add(rotatedShape.mesh);
 
 		// create the wall
-		const sideIndex: number = 1;
+		const sideIndex: number = 2;
 		const wallGeo = new BoxGeometry(shape.getSideDistance(sideIndex),5,1);
 		const wall = new Mesh(wallGeo, new MeshBasicMaterial({transparent: true, opacity: .5}));
+
+		// cheap door
+		const doorGeo = new BoxGeometry(2,4,1);
+		const door = new Mesh(doorGeo, new MeshBasicMaterial({transparent: true, opacity: .5, color: 0x0000ff}));
+		door.translateZ(1);
+		wall.add(door);
 
 		// align the wall and put into position to the side
 		ShapeUtils.alignRotationWithDirection(wall, shape.getSideDirection(sideIndex));
