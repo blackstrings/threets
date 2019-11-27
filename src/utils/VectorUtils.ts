@@ -138,6 +138,11 @@ export class VectorUtils {
 		return vec2s;
 	}
 
+	public static transform2dArrayToVector3s(point2ds: number[][]): Vector3[] {
+		const vec2s: Vector2[] = VectorUtils.transform2dArrayToVector2s(point2ds);
+		return VectorUtils.transformVector2sToVector3s(vec2s);
+	}
+
 	/**
 	 * Converts a JSON string to an array of vector2s.
 	 * Example json coord data:
@@ -806,6 +811,29 @@ export class VectorUtils {
 					}
 				} else {
 					throw new Error(logPrefix + 'pointToRotateAround is null or has invalid values');
+				}
+			} else {
+				throw new Error(logPrefix + 'points is null or empty');
+			}
+		}
+	}
+
+	public static scalePointsFromPoint(scale: Vector3, points: Vector3[], pointToScaleAround: Vector3): void {
+		const logPrefix: string = '<< VectorUtils >> Failed to scale from point, ';
+		if(!scale) {
+			throw new Error(logPrefix + 'degree is zero or invalid');
+		} else {
+			if(points && points.length) {
+				if(pointToScaleAround && VectorUtils.isAllValuesNumbers(pointToScaleAround)) {
+						const matrix: THREE.Matrix4 = new THREE.Matrix4();
+						points.forEach(p => {
+							p.sub(pointToScaleAround);
+							p.applyMatrix4(matrix.makeScale(scale.x, scale.y, scale.z));
+							p.add(pointToScaleAround);
+						});
+
+				} else {
+					throw new Error(logPrefix + 'pointToScaleAround is null or has invalid values');
 				}
 			} else {
 				throw new Error(logPrefix + 'points is null or empty');

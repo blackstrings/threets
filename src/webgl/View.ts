@@ -12,8 +12,8 @@ import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {
 	BoxGeometry,
 	DirectionalLight,
-	DirectionalLightHelper,
-	GridHelper,
+	DirectionalLightHelper, Geometry,
+	GridHelper, Line, LineBasicMaterial,
 	Mesh, MeshBasicMaterial,
 	MeshLambertMaterial,
 	ShapeGeometry, Vector2,
@@ -24,6 +24,7 @@ import {ShapeFactory} from '../utils/ShapeFactory';
 import {Shape2D} from './Shape2D';
 import {ShapeUtils} from '../utils/ShapeUtils';
 import {VectorUtils} from '../utils/VectorUtils';
+import {LineUtils} from '../utils/LineUtils';
 
 export default class View {
 	private renderer: THREE.WebGLRenderer;
@@ -39,14 +40,64 @@ export default class View {
 		this.lightSetup();
 
 		// ----------- playground code here -------------- //
+
+		// proxy line
+
+
+		// this.lineProxyScaling();
+		//this.wallExample(mesh3D);
+		//this.flashCubeExample();
+	}
+
+	private lineProxyScaling(){
+		const geo: Geometry = ShapeFactory.createCircleLineGeometry(2, 2, 1000);
+		const mesh: Line = new Line(geo, new LineBasicMaterial({color:0xff0000}));
+		this.scene.add(mesh);
+
+		// clone the original points to proxy points
+		const proxyVec3s: Vector3[] = [];
+		geo.vertices.forEach( (v: Vector3) => {
+			proxyVec3s.push(new Vector3(v.x, v.y, v.z));
+		});
+
+		// update
+		setInterval(() => {
+			// scale the proxy points
+			VectorUtils.scalePointsFromPoint(new Vector3(1.1,1.1), proxyVec3s, new Vector3());
+			// assign the proxy points back to the original
+			for(let i=0; i<geo.vertices.length; i++) {
+				geo.vertices[i].copy(proxyVec3s[i]);
+			}
+			// flag to update the line
+			geo.verticesNeedUpdate = true;
+		}, 500);
+	}
+
+	private sizingPointExample(): void {
+		const vec2s: number[][] = [
+			[-158.089661125933,-92.5714285714286],[-215.70541722470705,-92.5714285714286],[-277.08472384552266,-31.19212195061297],[-277.08472384552266,112.4571428571429],[-252.22776856098426,137.3140981416813],[-16.107976453954123,137.31409814168134],[51.18542830854274,70.02069337918446],[51.18542830854275,-27.428571428571427],[13.385803453751643,-27.42857142857143],[-15.760429995985653,1.7176620211658626],[-15.760429995985657,82.2857142857143],[-44.05261553655359,110.57789982628223],[-208.8463986415197,110.57789982628222],[-247.3390062204476,72.08529224735429],[-192.7339886532785,17.480274680185154],[-113.50604033521503,17.480274680185154],[-77.33358011446197,-18.69218554056791],[-77.33358011446197,-57.60000000000003],[67.57205026093199,-57.60000000000002],[67.57205026093199,26.74285714285716],[115.58518034324365,26.742857142857165],[115.58518034324365,-43.8857142857143],[81.2943078109069,-78.17658681805104],[-92.92898458565283,-78.17658681805104],[-163.57092056229155,-7.534650841412329],[-197.87196890841986,-7.534650841412329],[-217.76431857501666,-27.42700050800913],[-217.76431857501666,-52.11428571428574],[-158.089661125933,-52.11428571428574],
+		];
+		const vec3s: Vector3[] = VectorUtils.transform2dArrayToVector3s(vec2s);
+
+		VectorUtils.scalePointsFromPoint(new Vector3(.5,.5,.5), vec3s, new Vector3(200,0,0));
+
+		const geo = new Geometry();
+		geo.vertices = [...vec3s];
+		const line = new Line(geo, new LineBasicMaterial({color:0xff0000}));
+		this.scene.add(line);
+	}
+
+	private flashCubeExample(): void {
+		const cube: CustomShape = new CustomShape(null);
+		this.scene.add(cube.mesh);
+		this.animatedObjs.push(cube);
+	}
+
+	private wallExample(): void {
 		const mesh3D: Mesh = new Mesh();
+		this.scene.add(mesh3D);
 		// mesh3D is rotated by -90 degrees about the X-axis for proper OrbitControls functionality
 		// mesh3D.rotation.x = -Math.PI / 2;
-		this.scene.add(mesh3D);
-
-
-		// test animated mesh from a custom Shape class
-		//this.animatedObjs.push(new Shape(this.scene));
 
 		// shape size and points
 		const size: number = 15;
@@ -81,12 +132,6 @@ export default class View {
 		offset.setLength(2);
 		wall.position.add(offset);
 		mesh3D.add(wall);
-
-
-		// test static cube
-		//const cube: CustomShape = new CustomShape(null);
-		//this.scene.add(cube.mesh);
-		//this.animatedObjs.push(cube);
 	}
 
 	/** basic lighting for the scene */

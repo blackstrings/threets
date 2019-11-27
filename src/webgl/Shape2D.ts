@@ -2,6 +2,11 @@
 import {Line3, Mesh, MeshBasicMaterial, Vector2, Vector3} from 'three';
 import {ShapeFactory} from '../utils/ShapeFactory';
 import { VectorUtils } from '../utils/VectorUtils';
+
+/**
+ * A custom 2D shape on XY plane. Made out from points, but will also create Sides.
+ * To access the points, use the api instead as the points will come from the sides.
+ */
 export class Shape2D {
 
 	public mesh: Mesh;

@@ -4,7 +4,17 @@ import * as THREE from 'three';
 import {VectorUtils} from './VectorUtils';
 import {ShapeUtils} from './ShapeUtils';
 
-import {Geometry, BoxGeometry, DirectionalLight, DirectionalLightHelper, GridHelper, Mesh, MeshLambertMaterial, Vector3} from "three";
+import {
+	Geometry,
+	BoxGeometry,
+	DirectionalLight,
+	DirectionalLightHelper,
+	GridHelper,
+	Mesh,
+	MeshLambertMaterial,
+	Vector3,
+	MeshBasicMaterial, SphereBufferGeometry
+} from 'three';
 
 
 /**
@@ -223,6 +233,12 @@ export module ShapeFactory {
 		const circGeo: Geometry = new Geometry();
 		circGeo.vertices.push(...circPoints);
 		return circGeo;
+	}
+
+	export function createSphere(rad: number = 1, vSeg: number = 8, hSeg: number = 8, color: number = 0xff0000): Mesh {
+		const geo = new SphereBufferGeometry(rad, hSeg, vSeg);
+		const mesh = new Mesh(geo, new MeshBasicMaterial({color: color}))
+		return mesh;
 	}
 
 }
