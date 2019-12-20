@@ -14,7 +14,7 @@
 		},
 
 		// Gives error if there are implied "<any>" types.
-		"noImplicitAny": true, 
+		"noImplicitAny": false,
 
 		// Allows you to access non-constant properties, such as object[keyVar]
 		"suppressImplicitAnyIndexErrors": true

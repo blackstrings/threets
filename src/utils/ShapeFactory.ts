@@ -13,8 +13,10 @@ import {
 	Mesh,
 	MeshLambertMaterial,
 	Vector3,
-	MeshBasicMaterial, SphereBufferGeometry
+	MeshBasicMaterial, SphereBufferGeometry, Line,
+	AxesHelper
 } from 'three';
+import { UvUtils } from './UvUtils';
 
 
 /**
@@ -239,6 +241,241 @@ export module ShapeFactory {
 		const geo = new SphereBufferGeometry(rad, hSeg, vSeg);
 		const mesh = new Mesh(geo, new MeshBasicMaterial({color: color}))
 		return mesh;
+	}
+
+	/**
+	 * FreezeTransformation only works on meshes that have been moved or rotated through applyMatrix().
+	 * Manipulating the mesh by setting position and rotation without using the matrix will not have desireable outcome
+	 * with this method.
+	 *
+	 * Resets the objet3d's matrix to the unity value, but does not move the object3d from its currently location it is
+	 * at. Whether or not the mesh has modified position, rotation, or scale, keep the current state, but reset the
+	 * values.
+	 *
+	 * It tells the mesh
+	 * - its current position becomes its origin, as if it has never been translated.
+	 * - its rotations are zeroed out, as if it has never been rotated.
+	 * - its scale is set to 1,1,1 as if it has never been scaled.
+	 *
+	 * For those that understand matrix, the mesh's matrix4 is reset to the matrix unity value.
+	 *
+	 *  Mesh
+	 */
+	export function freezeTransformation(object3d: Line | Mesh): void {
+
+		object3d.geometry.applyMatrix(object3d.matrix);
+		object3d.position.set(0, 0, 0);
+		object3d.rotation.set(0, 0, 0);
+		object3d.scale.set(1, 1, 1);
+		object3d.updateMatrix();
+
+	}
+
+	/**
+	 * Returns a Line 3d object for the scene. By default the line does not auto close.
+	 * To make a closed line, clone the start point and push it into the array as last element.
+	 *
+	 * param points the points which forms the line
+	 * param color a hex number in format of (0xff0000) by default will be red if not provided
+	 */
+	export function createDebugLine(points: Vector3[], color: number = 0xff0000): Line {
+		if(points && points.length) {
+			const geo: THREE.Geometry = new THREE.Geometry();
+			geo.vertices.push(...points);
+			return new Line(geo, new THREE.LineBasicMaterial({color: color}));
+		} else {
+			throw new Error('<< Object3dUtils >> Failed to create debug Line, points is null or empty');
+		}
+	}
+
+	/**
+	 * Returns a visual helper that displays XYZ axis. Only use for debugging purposes.
+	 *
+	 * Useful for visually marking a point in 3d space and showing 3d direction.
+	 * When rotating a mesh, useful to visually see where its original axis are pointing.
+	 *
+	 *
+	 *  {number} [size=5] size of the axis
+	 *  {THREE.AxisHelper} the axis itself
+	 *  Object3dUtils
+	 */
+	export function createAxes(size: number = 5): AxesHelper {
+		return new AxesHelper(size);
+	}
+
+	/**
+	 * Create and returns a rectangle board mesh from a XY Plane facing direction.
+	 *
+	 * This method uses the points passed in to create the Mesh3D of the object. It does so by creating the six planes
+	 * of the object individually, as though the FramingComponent is oriented in the positive x-axis, then rotating and
+	 * translating these planes as necessary, and finally merging them into a single Geometry. By using this method, we
+	 * can maintain better control of the UV's of the object
+	 *
+	 * Used for creating box like shapes, especially for plotted boards.
+	 * The creation process expects exactly Eight vector3 points.
+	 *
+	 * Position yourself looking at a piece of paper and drawing out a rectangle. That first face is the top side of
+	 * the box.
+	 *
+	 * Where point indices 0-3 representing the top layer.
+	 * Where 4-7 representing the bottom layer.
+	 * Where 4,0,3,7 represent the right side
+	 * Where 5,1,2,6 represents the left side.
+	 *
+	 *   6__________7
+	 *  /|         /|
+	 * 2----------3 |
+	 * | 5_  _  _  _| 4
+	 * 1/_________0/
+	 *
+	 *
+	 *  {Vector3[]} points the 8 points to create the box
+	 *  {THREE.Material} material the material of the box
+	 *  {Mesh} the returned box mesh
+	 *  Object3dUtils
+	 */
+	export function createBoardMesh3D(points: Vector3[], material: THREE.Material): Mesh {
+		const length: number = points[0].distanceTo(points[1]); // represents the longest dimension of the board
+		const width: number = points[1].distanceTo(points[2]);
+		const thickness: number = points[0].distanceTo(points[4]);
+
+		const matrix: THREE.Matrix4 = new THREE.Matrix4(); // Unit matrix which will be used to apply transformations
+														   // to the various Geometries we create
+
+		// sidePlane1Vec2s - used to create the PlaneGeometry for the first side and third (top & bottom)
+		const sidePlane1Vec2s: THREE.Vector2[] = [
+			new THREE.Vector2(0, 0),
+			new THREE.Vector2(0, width),
+			new THREE.Vector2(length, width),
+			new THREE.Vector2(length, 0)
+		];
+
+		const sidePlane1: THREE.ShapeGeometry = this.createBoardPlaneGeometry(sidePlane1Vec2s, 0); // represents the
+																								   // top of the
+																								   // framing component
+																								   // (positive z-axis
+																								   // facing)
+
+		const sidePlane3: THREE.ShapeGeometry = sidePlane1.clone(); // represents the bottom of the framing component
+																	// (negative z-axis facing)
+		sidePlane3.applyMatrix(matrix.makeRotationX(THREE.Math.degToRad(180)));
+		sidePlane3.applyMatrix(matrix.makeTranslation(0, width, -thickness));
+
+		// sidePlane2Vec2s - used to create the PlaneGeometry for the second and fourth sides (left & right sides)
+		const sidePlane2Vec2s: THREE.Vector2[] = [
+			new THREE.Vector2(0, 0),
+			new THREE.Vector2(0, thickness),
+			new THREE.Vector2(length, thickness),
+			new THREE.Vector2(length, 0)
+		];
+
+		const sidePlane2: THREE.ShapeGeometry = this.createBoardPlaneGeometry(sidePlane2Vec2s, 0); // represents the
+																								   // 'back' side of
+																								   // the framing
+																								   // component
+																								   // (positive y-axis
+																								   // facing)
+
+		const sidePlane4: THREE.ShapeGeometry = sidePlane2.clone(); // represents the 'front' side of the framing
+																	// component (negative y-axis facing)
+
+		// Here we apply the necessary rotation and transformation to place sidePlane2
+		sidePlane2.applyMatrix(matrix.makeRotationX(THREE.Math.degToRad(-90)));
+		sidePlane2.applyMatrix(matrix.makeTranslation(0, width, 0));
+
+		// And now applying the necessary rotation to place sidePlane4
+		sidePlane4.applyMatrix(matrix.makeRotationX(THREE.Math.degToRad(-90)));
+
+		// endPlaneVecs - THREE.Vector2s used to create the PlaneGeometry for the end sides of the board
+		const endPlaneVecs: THREE.Vector2[] = [
+			new THREE.Vector2(0, 0),
+			new THREE.Vector2(0, width),
+			new THREE.Vector2(thickness, width),
+			new THREE.Vector2(thickness, 0)
+		];
+
+		const endPlane1: THREE.ShapeGeometry = this.createBoardPlaneGeometry(endPlaneVecs, 90); // represents the right
+																								// side of the framing
+																								// component (positive
+																								// x-axis facing)
+		// Before cloning, we rotate the endPlane through the Y planes
+		endPlane1.applyMatrix(matrix.makeRotationY(THREE.Math.degToRad(90)));
+
+		const endPlane2: THREE.ShapeGeometry = endPlane1.clone(); // represents the left side of the framing component
+																  // (negative x-axis facing)
+
+		endPlane1.applyMatrix(matrix.makeTranslation(length, 0, 0));
+
+		// flip side4 and end2 normals
+		UvUtils.flipFaceNormalOnGeo(sidePlane4);
+		UvUtils.flipFaceNormalOnGeo(endPlane2);
+
+		// Here we merge the individual Plane Geometries into a single Geometry to create the mesh3D
+		const boardGeo: THREE.Geometry = new THREE.Geometry();
+		boardGeo.merge(sidePlane1);
+		boardGeo.merge(sidePlane2);
+		boardGeo.merge(sidePlane3);
+		boardGeo.merge(sidePlane4);
+		boardGeo.merge(endPlane1);
+		boardGeo.merge(endPlane2);
+
+		boardGeo.mergeVertices(); // removes duplicate vertices from the Geometry
+
+		return new Mesh(boardGeo, material);
+	}
+
+	/**
+	 * Creates a plane Geometry for a board face
+	 *
+	 *
+	 *  {THREE.Vector2[]} points
+	 *  {number} textureRotateDegree
+	 *  {THREE.ShapeGeometry}
+	 *  FramingComponent
+	 */
+	export function createBoardPlaneGeometry(points: THREE.Vector2[], textureRotateDegree: number): THREE.ShapeGeometry {
+		const shape: THREE.Shape = new THREE.Shape(points);
+		const geo: THREE.ShapeGeometry = new THREE.ShapeGeometry(shape);
+		UvUtils.setUvRotationOnGeometry(textureRotateDegree, geo);
+		return geo;
+	}
+
+	/** createa an extruded mesh out from 2d points. Assumes the 2d points are on the same plance */
+	export function createExtrudedShape(
+		points: Vector3[],
+		extrudeAmount = 0,
+		isBevel: boolean = true,
+		bevelSegments: number = 1,
+		steps: number = 1,
+		bevelSize: number = 0,
+		bevelThickness: number = .1): Mesh
+	{
+		if(points && points.length) {
+
+			// Note: there are no type saftey for extrude settings
+			// geo extrusion settings - high chance these values will be constant once finalize
+			const extrudeSettings: Object = {
+				amount: extrudeAmount,
+				bevelEnabled: isBevel,
+				bevelSegments: bevelSegments,
+				steps: steps,
+				bevelSize: bevelSize,
+				bevelThickness: bevelThickness
+			};
+
+			try { // Use THREE.ExtrudeGeometry to create floorMesh3D
+				const point2ds: THREE.Vector2[] = VectorUtils.transformVector3sToVector2s(points);
+				const shape: THREE.Shape = new THREE.Shape(point2ds);
+				const extrudedGeometry: THREE.ExtrudeGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+				const mesh: Mesh = new Mesh(extrudedGeometry);
+				return mesh;
+			} catch(e) {
+				throw new Error(e);
+			}
+
+		} else {
+			throw new Error('<< Object3dUtils >> Failed to create extruded mesh, points is null or empty');
+		}
 	}
 
 }

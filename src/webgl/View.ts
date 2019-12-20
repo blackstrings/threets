@@ -9,6 +9,8 @@ import * as THREE from "three";
 
 import Shape from "./Shape";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import TWEEN from '@tweenjs/tween.js';
+
 import {
 	BoxGeometry,
 	DirectionalLight,
@@ -35,18 +37,103 @@ export default class View {
 	// for auto remove when animation is done
 	private objsReadyForDiscard: CustomShape[] = [];
 
+	private tween: TWEEN.Tween;
+
+	private meshes: Mesh[] = [];
+
 	constructor(canvasElem: HTMLCanvasElement) {
 		this.sceneSetup(canvasElem);
 		this.lightSetup();
 
 		// ----------- playground code here -------------- //
-
-		// proxy line
-
-
-		// this.lineProxyScaling();
+		this.cameraTweenExample();
+		//this.lineProxyScaling();
 		//this.wallExample(mesh3D);
 		//this.flashCubeExample();
+	}
+
+	/** on mouse click, tween the camera position and lookAt to one of the 3 spheres */
+	private cameraTweenExample(): void {
+
+		// proxy line
+		this.meshes.push(ShapeFactory.createSphere(2, 8, 8, 0xff0000));
+		this.meshes[0].position.set(50,0,50);
+		this.meshes.push(ShapeFactory.createSphere(2, 8, 8, 0x00ff00));
+		this.meshes[1].position.set(-50, 0, -50);
+		this.meshes.push(ShapeFactory.createSphere(2, 8, 8, 0x0000ff));
+
+		this.meshes.forEach(m => {
+			this.scene.add(m);
+		});
+
+
+		let canAnimate: boolean = false;
+		let counter: number = 0;
+		window.addEventListener('mousedown', () => {
+			if(this.tween){this.tween.stop();}
+			const camDistancePadding: number = 50;
+			const targetMesh: Mesh = this.meshes[counter];
+			// start lookat should always be one behind the next
+			const oldLookAtIndex = counter-1 < 0 ? this.meshes.length-1 : counter-1;
+			const oldLookAt: Vector3 = this.meshes[oldLookAtIndex].position;
+			const newMeshPos: Vector3 = targetMesh.position.clone();
+
+			// in order to rotate the camera to lookAt the correct position,
+			// we need to determine where the cam pos should be by a offset vector
+			let vectorNormal: Vector3 = new Vector3(1,1);
+			canAnimate = !canAnimate;
+			vectorNormal.setLength(camDistancePadding);
+
+			const newCamPos: Vector3 = newMeshPos.clone().add(vectorNormal);
+			const camPosTween = this.createPositionTween(this.camera.position, newCamPos);
+			camPosTween.start();
+
+			const newLookAt: Vector3 = newMeshPos.clone();
+			const camLookAtTween = this.createLookAtTween(oldLookAt.clone(), newLookAt);
+			camLookAtTween.start();
+
+			counter++;
+			if(counter >= this.meshes.length){
+				counter = 0;
+			}
+		});
+	}
+
+	/**
+	 *
+	 * @param targetPosition must be direct reference to the target's position
+	 * @param tweenToPos the new position to tween to, can be ether clone or not
+	 * @param lookAtPosition recommend cloned vector
+	 */
+	private createPositionTween(targetPosition: Vector3, tweenToPos: Vector3): TWEEN.Tween {
+		return new TWEEN.Tween(targetPosition)
+			.onUpdate(() => {
+				//this.controls.target = targetPosition;
+				//this.camera.lookAt(targetPosition);
+			})
+			.onComplete(() => {
+			})
+			.onStop(() => {
+			})
+			.to({x: tweenToPos.x, y: tweenToPos.y, z: tweenToPos.z}, 1000)
+			.easing(TWEEN.Easing.Quintic.InOut);
+	}
+
+	private createLookAtTween(targetPosition: Vector3, tweenToPos: Vector3): TWEEN.Tween {
+		return new TWEEN.Tween(targetPosition)
+			.onUpdate(() => {
+				this.camera.lookAt(targetPosition);
+			})
+			.onComplete(() => {
+			})
+			.onStop(() => {
+			})
+			.to({
+				x: tweenToPos.x,
+				y: tweenToPos.y,
+				z: tweenToPos.z},
+				1000)
+			.easing(TWEEN.Easing.Quintic.InOut);
 	}
 
 	private lineProxyScaling(){
@@ -180,6 +267,9 @@ export default class View {
 		this.animatedObjs.forEach( obj => {
 			obj.update();
 		});
+
+		TWEEN.update();
+
 		//this.cleanAnimatedObjs();
 		this.renderer.render(this.scene, this.camera);
 	}
