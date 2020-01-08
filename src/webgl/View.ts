@@ -10,16 +10,21 @@ import * as THREE from "three";
 import Shape from "./Shape";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import TWEEN from '@tweenjs/tween.js';
+import vs from './glsl/basicmulti.vs';
+import fs from './glsl/basicmulti.fs';
+import vs1 from './glsl/multilayer.vs';
+import fs1 from './glsl/multilayer.fs';
 
 import {
 	BoxGeometry,
 	DirectionalLight,
-	DirectionalLightHelper, Geometry,
+	DirectionalLightHelper, ExtrudeGeometry, Geometry,
 	GridHelper, Line, LineBasicMaterial,
 	Mesh, MeshBasicMaterial,
 	MeshLambertMaterial,
-	ShapeGeometry, Vector2,
-	Vector3
+	ShapeGeometry, Texture, Vector2,
+	Vector3,
+	RepeatWrapping, TextureLoader, InstancedBufferGeometry
 } from 'three';
 import {CustomShape} from "./CustomShape";
 import {ShapeFactory} from '../utils/ShapeFactory';
@@ -27,6 +32,7 @@ import {Shape2D} from './Shape2D';
 import {ShapeUtils} from '../utils/ShapeUtils';
 import {VectorUtils} from '../utils/VectorUtils';
 import {LineUtils} from '../utils/LineUtils';
+import {UvUtils} from '../utils/UvUtils';
 
 export default class View {
 	private renderer: THREE.WebGLRenderer;
@@ -46,10 +52,145 @@ export default class View {
 		this.lightSetup();
 
 		// ----------- playground code here -------------- //
-		this.cameraTweenExample();
+
+
+
+		this.multiTextureAdvanceExample();
+		//this.multiTextureBasicExample();
+		// this.meshExtrusionExample();
+		// this.cameraTweenExample();
 		//this.lineProxyScaling();
 		//this.wallExample(mesh3D);
 		//this.flashCubeExample();
+	}
+
+	private multiTextureBasicExample(): void {
+		// let uniforms = {
+		// 	colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
+		// 	colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)}
+		// }
+		// const textureA: Texture = new THREE.TextureLoader().load("./textures/texturewood.png");
+		const textureA: Texture = new THREE.TextureLoader().load("./textures/uvtexture.jpg");
+
+			textureA.wrapS = RepeatWrapping;
+			textureA.wrapT = RepeatWrapping;
+			// for uvs repeat values and offset you have to update it within the shader
+			// textureA.offset.set(1,1);
+			// textureA.repeat.set(2, 2);
+			textureA.needsUpdate = true;
+
+		const textureB: Texture = new THREE.TextureLoader().load("./textures/texturefade.png");
+		// textureB.wrapS = THREE.RepeatWrapping;
+		// textureB.wrapT = THREE.RepeatWrapping;
+		// textureB.repeat.set(1 / 1, 1 / 1);
+		textureB.needsUpdate = true;
+
+		let attributes = {};
+		let uniforms = {
+			//color: { type: "c", value: new THREE.Color( 0x0000ff ) },
+			tOne: {type: 't', value: textureA},
+			tSec: {type: 't', value: textureB},
+			uvMultiply: {type: 'b', value: true},
+			textureRepeat: {
+				type: 'f',
+				value: 2
+			}
+		}
+
+		const size: number = 10;
+		const w: number = 12;
+		const l: number = 36;
+		const v: Vector3[] = [
+			new Vector3(), new Vector3(0,w), new Vector3(l,w), new Vector3(l,0)
+		];
+		const geometry: ExtrudeGeometry = ShapeFactory.createExtrudeGeometry(v, 1.5);
+		//  let geometry = new THREE.BoxGeometry(size, size, size);
+
+		let material =  new THREE.ShaderMaterial({
+			uniforms: uniforms,
+			fragmentShader: fs,
+			vertexShader: vs,
+		})
+
+		let mesh = new THREE.Mesh(geometry, material)
+		this.scene.add(mesh)
+
+		// const crateTexture: Texture = new THREE.TextureLoader().load("./textures/uvtexture.jpg");
+		// crateTexture.wrapS = crateTexture.wrapT = THREE.RepeatWrapping;
+		// crateTexture.offset.set(1.5,1.5);
+		// crateTexture.repeat.set( 2, 2 );
+
+		var crateMaterial = new THREE.MeshBasicMaterial( { map: textureA } );
+		var cubeGeometry = new THREE.BoxGeometry( 5, 5, 5 );
+		var crate = new THREE.Mesh( cubeGeometry.clone(), material );
+		this.scene.add( crate );
+	}
+
+	private multiTextureAdvanceExample(): void {
+		// let uniforms = {
+		// 	colorB: {type: 'vec3', value: new THREE.Color(0xACB6E5)},
+		// 	colorA: {type: 'vec3', value: new THREE.Color(0x74ebd5)}
+		// }
+		const textureA: Texture = new THREE.TextureLoader().load("./textures/texturewood.png");
+		// const textureA: Texture = new THREE.TextureLoader().load("./textures/uvtexture.jpg");
+		textureA.wrapS = THREE.RepeatWrapping;
+		textureA.wrapT = THREE.RepeatWrapping;
+		// textureA.repeat.set(1, 1);	// will not work with materialShader
+		textureA.needsUpdate = true;
+		const textureB: Texture = new THREE.TextureLoader().load("./textures/texturefade.png");
+		// textureB.wrapS = THREE.RepeatWrapping;
+		// textureB.wrapT = THREE.RepeatWrapping;
+		// textureB.repeat.set(1 / 1, 1 / 1);
+		textureB.needsUpdate = true;
+
+		let attributes = {};
+
+		const size: number = 10;
+		const h: number = 12;
+		const w: number = 128;
+		let uniforms = {
+			//color: { type: "c", value: new THREE.Color( 0x0000ff ) },
+			texture: {type: 't', value: textureA},
+			repeatX: {type: 'f', value: w},
+			repeatY: {type: 'f', value: h},
+			texture2: {type: 't', value: textureB},
+			uvMultiply: {type: 'b', value: false},
+		}
+
+
+		const v: Vector3[] = [
+			new Vector3(), new Vector3(0,h), new Vector3(w,h), new Vector3(w,0)
+		];
+		const geometry: ExtrudeGeometry = ShapeFactory.createExtrudeGeometry(v, 1.5);
+		// let geometry = new THREE.BoxGeometry(size, size, size);
+
+		let material =  new THREE.ShaderMaterial({
+			uniforms: uniforms,
+			fragmentShader: fs1,
+			vertexShader: vs1,
+		});
+
+		for(let i=0; i<10; i++) {
+			const cloneGeo: Geometry = geometry.clone();
+			let mesh = new THREE.Mesh(cloneGeo, material);
+			const offX: number = Math.floor( Math.random() * 1000);
+			const offY: number = Math.floor( Math.random() * 1000);
+			//UvUtils.offsetUVs(mesh, offX, offY);
+			mesh.position.y += i * (h + .25);
+			this.scene.add(mesh);
+		}
+
+
+
+	}
+
+	private meshExtrusionExample(): void {
+		const w: number = 12;
+		const v: Vector3[] = [
+			new Vector3(), new Vector3(0,w), new Vector3(w,w), new Vector3(w,0)
+		];
+		const mesh: Mesh = ShapeFactory.createExtrudedShape(v, 1.5);
+		this.scene.add(mesh);
 	}
 
 	/** on mouse click, tween the camera position and lookAt to one of the 3 spheres */
@@ -272,6 +413,10 @@ export default class View {
 
 		//this.cleanAnimatedObjs();
 		this.renderer.render(this.scene, this.camera);
+
+		console.log(`Draw calls per frame: ${this.renderer.info.render.calls}`);
+		this.renderer.info.autoReset = false;
+		this.renderer.info.reset()
 	}
 
 	private moveToDiscard(obj: CustomShape): void {

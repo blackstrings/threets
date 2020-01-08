@@ -14,7 +14,7 @@ import {
 	MeshLambertMaterial,
 	Vector3,
 	MeshBasicMaterial, SphereBufferGeometry, Line,
-	AxesHelper
+	AxesHelper, ExtrudeGeometry
 } from 'three';
 import { UvUtils } from './UvUtils';
 
@@ -440,16 +440,15 @@ export module ShapeFactory {
 		return geo;
 	}
 
-	/** createa an extruded mesh out from 2d points. Assumes the 2d points are on the same plance */
-	export function createExtrudedShape(
+	export function createExtrudeGeometry(
 		points: Vector3[],
 		extrudeAmount = 0,
 		isBevel: boolean = true,
 		bevelSegments: number = 1,
-		steps: number = 1,
+		steps: number = 0,
 		bevelSize: number = 0,
-		bevelThickness: number = .1): Mesh
-	{
+		bevelThickness: number = 0
+	): ExtrudeGeometry {
 		if(points && points.length) {
 
 			// Note: there are no type saftey for extrude settings
@@ -467,6 +466,32 @@ export module ShapeFactory {
 				const point2ds: THREE.Vector2[] = VectorUtils.transformVector3sToVector2s(points);
 				const shape: THREE.Shape = new THREE.Shape(point2ds);
 				const extrudedGeometry: THREE.ExtrudeGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+				return extrudedGeometry;
+			} catch (e) {
+				throw new Error(e);
+			}
+		}
+	}
+
+	/**
+	 * creates an extruded mesh out from 2d points. Assumes the 2d points are on the same place.
+	 * Note: bevelSegments is req to be 1 or higher to see any extrusion.
+	 */
+	export function createExtrudedShape(
+		points: Vector3[],
+		extrudeAmount = 0,
+		isBevel: boolean = true,
+		bevelSegments: number = 1,
+		steps: number = 0,
+		bevelSize: number = 0,
+		bevelThickness: number = 0): Mesh
+	{
+		if(points && points.length) {
+
+			try{
+				const extrudedGeometry: ExtrudeGeometry = ShapeFactory.createExtrudeGeometry(
+					points, extrudeAmount, isBevel, bevelSegments,steps, bevelSize, bevelThickness);
+
 				const mesh: Mesh = new Mesh(extrudedGeometry);
 				return mesh;
 			} catch(e) {

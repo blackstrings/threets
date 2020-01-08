@@ -43,6 +43,55 @@ import {Geometry, Vector3, Vector2, Mesh, Line} from 'three';
  */
 export class UvUtils {
 
+	public static offsetUVs(mesh: Mesh, offsetX: number = 0, offsetY: number = 0) {
+		if(mesh) {
+
+			if(mesh.geometry && (mesh.geometry instanceof Geometry || mesh.geometry instanceof THREE.ShapeGeometry || mesh.geometry instanceof THREE.ExtrudeGeometry)) {
+
+				const getClones: boolean = false; // false so we get the actual UV object references
+				const UVs: Vector2[] = UvUtils.getMeshUVs(mesh, getClones);
+
+				// prepare a float32 array that will eventually contain all the serialized UVs
+				const itemSize: number = 2;	// a UV has x and y, so there are two properties in a UV
+
+				// Create a float32 array with the correct size to contain all the mesh's UVs
+				// itemSize * number of uvs = the exact size to contain all your UVs and their values
+				// +2 for when using matrix4.applyToBufferAttribute, it'll be out of range by 1, when looking for
+				// the last z value (bug in 85 threejs)
+				const float32: Float32Array = new Float32Array(UVs.length * itemSize + 2);
+
+				// create the BufferAttribute from the float32 and itemsize, we will perform rotation on the
+				// bufferAttribute
+				const attr: THREE.BufferAttribute = new THREE.BufferAttribute(float32, itemSize);
+
+				// UV Serialization - serialize all the uvs into the attribute
+				// We have already set our bufferAttribute with the correct itemSize and float32 size
+				// that will allow us to accurately serialize the UVs into the bufferAttribute
+				// copy all the uvs values to the buffer attribute
+				attr.copyVector2sArray(UVs);
+
+				const radian: number = THREE.Math.degToRad(offsetX);
+				// use a Matrix4 to rotate the serialized UV values
+				// TODO xl applyToBuffer is deprecated switch to applyToBufferAttribute() when we up threejs
+				new THREE.Matrix4().makeTranslation(offsetX, offsetY, 0).applyToBuffer(attr);
+
+				// Deserialize the UVs from buffers back into real Vector2s
+				// -2 due to bug where we added additional count with +2 above, but we don't want to loop to the
+				// last index
+				for(let i = 0; i < attr.count - 2; i++) {
+					const rotatedUV: Vector2 = new Vector2().fromBufferAttribute(attr, i) as Vector2;
+					UVs[i].copy(rotatedUV);
+				}
+
+			} else {
+				throw new Error('<< UvUtils >> Failed to rotate uvs, mesh geometry is null or invalid');
+			}
+
+		} else {
+			throw new Error('<< UvUtils >> Failed to rotate uvs, mesh is null');
+		}
+	}
+
 	/**
 	 * Set UVs to a specific rotation on non-buffer geometry in local-space.
 	 * This method rotates UVs from the local-space as UVs rotate from the geometry intact vertices.
