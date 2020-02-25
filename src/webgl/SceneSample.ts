@@ -17,6 +17,9 @@ import {Shape2D} from './Shape2D';
 import {BoxGeometry} from 'three';
 import {MeshBasicMaterial} from 'three';
 import {ShapeUtils} from '../utils/ShapeUtils';
+import {Plane} from 'three';
+import {PlaneHelper} from 'three';
+import {AxesHelper} from 'three';
 
 export class SceneSample {
 
@@ -314,5 +317,30 @@ export class SceneSample {
 		offset.setLength(2);
 		wall.position.add(offset);
 		mesh3D.add(wall);
+	}
+
+	public static clippingPlaneExample(scene: Scene): void {
+		const clip: Plane = new Plane(new Vector3(0, 1, 1), 0);
+		const helper: PlaneHelper = new PlaneHelper(clip, 100, 0xff0000);
+		scene.add(helper);
+
+		const geo: BoxGeometry = new BoxGeometry(10,10,10);
+		const mat: MeshBasicMaterial = new MeshBasicMaterial({color: 0x00ff00});
+		const mat2: MeshBasicMaterial = new MeshBasicMaterial({color: 0x0000ff});
+		mat.clippingPlanes = [clip];
+		mat2.clippingPlanes = [clip];
+		const mesh: Mesh = new Mesh(geo.clone(), mat);
+		scene.add(mesh);
+
+		const mesh2: Mesh = new Mesh(geo.clone(), mat2);
+		mesh2.position.setY(14);
+		scene.add(mesh2);
+
+		const axis: AxesHelper = new AxesHelper(100);
+		scene.add(axis);
+
+		setInterval(() => {
+			clip.constant -= 1;
+		}, 1000);
 	}
 }

@@ -11,10 +11,12 @@ import Shape from "./Shape";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import TWEEN from '@tweenjs/tween.js';
 import {
+	AxesHelper,
+	BoxGeometry,
 	DirectionalLight,
 	DirectionalLightHelper,
 	GridHelper,
-	Mesh,
+	Mesh, MeshBasicMaterial, Plane, PlaneHelper,
 	Vector3
 } from 'three';
 import {CustomShape} from "./CustomShape";
@@ -28,18 +30,22 @@ export default class View {
 	private animatedObjs: CustomShape[] = [];
 	// for auto remove when animation is done
 	private objsReadyForDiscard: CustomShape[] = [];
+	private enableDebugLogs: boolean = false;
 
 	private tween: TWEEN.Tween;
 
 	private meshes: Mesh[] = [];
 
 	constructor(canvasElem: HTMLCanvasElement) {
+		this.enableDebugLogs = false;
 		this.sceneSetup(canvasElem);
 		this.lightSetup();
 
 		// SceneSample.cameraTweenExample(this.scene, this.meshes, this.tween, this.camera);
 		// SceneSample.flashCubeExample(this.scene, this.animatedObjs);
-		SceneSample.wallExample(this.scene);
+		//SceneSample.wallExample(this.scene);
+		//SceneSample.clippingPlaneExample(this.scene);
+
 
 	}
 
@@ -63,6 +69,7 @@ export default class View {
 			canvas: canvasElem,
 			antialias: true,
 		});
+		this.renderer.localClippingEnabled = true;	// for clipping planes to work
 		this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
 		this.camera.position.copy(new Vector3(100,100,100));
 
@@ -95,7 +102,9 @@ export default class View {
 		//this.cleanAnimatedObjs();
 		this.renderer.render(this.scene, this.camera);
 
-		console.log(`Draw calls per frame: ${this.renderer.info.render.calls}`);
+		if(this.enableDebugLogs) {
+			console.log(`Draw calls per frame: ${this.renderer.info.render.calls}`);
+		}
 		this.renderer.info.autoReset = false;
 		this.renderer.info.reset()
 	}
