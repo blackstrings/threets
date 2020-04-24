@@ -343,4 +343,131 @@ export class SceneSample {
 			clip.constant -= 1;
 		}, 1000);
 	}
+
+	public static create4PointsAroundPointExample(scene: Scene): void {
+		const center: Vector3 = new Vector3(6,6);
+		const postWidth: number = 12;
+		const postFacingVector: Vector3 = new Vector3(0,-1);	// facing towards me, not away from me
+		const postHeight: number = 36;
+
+		const points: Vector3[] = SceneSample.createPostPointsAroundBottomCenterPointXYPlane(center, postWidth, postFacingVector, postHeight);
+		points.forEach( p => {
+			const sphere = ShapeFactory.createSphere(1);
+			sphere.position.copy(p);
+			scene.add(sphere);
+		});
+	}
+
+	/**
+	 * Returns 8 post points based off the post center. The post is assumed to be vertical facing up on XY plane.
+	 * from a top down view, creates 4 points around the post's center point (the bottom 4 corners)
+	 * All Points are relative to the postCenter
+	 *
+	 * @param postCenter represents the centroid of the 4 most bottom corners of the post
+	 * @param postWidth the post width measured from left to right
+	 * @param postFacingVector the front side of the post facing the other shape from a top down view
+	 * @param postHeight the post height measured vertically from bottom to top
+	 */
+	public static createPostPointsAroundBottomCenterPointXYPlane(postCenter: Vector3, postWidth: number, postFacingVector: Vector3, postHeight: number): Vector3[] {
+		const points: Vector3[] = [];
+		postWidth = postWidth ? postWidth : 12;	// default width if not provided
+
+		if(postCenter && postFacingVector) {
+			postFacingVector.normalize();	// always use a normalized facing vector
+
+			// find the first corner point
+			// from a top down ortho view, the first corner is XX units down and XX units left from the center.
+			const downOffset: Vector3 = postFacingVector.clone().setLength(postWidth/2);
+			const leftOffset: Vector3 = downOffset.clone();
+			// hint: a true vector normal rotates from (0,0,0)
+			VectorUtils.rotatePointsFromPoint(-90, [leftOffset], new Vector3(), new Vector3(0,0,1));
+
+			const v1: Vector3 = postCenter.clone();	// get a relative starting point to center
+			v1.add(downOffset);
+			v1.add(leftOffset);
+			points.push(v1);
+			// end of first corner point
+
+			// loop and find the 2nd-4th corner points in a clockwise fashion
+			for(let i=1; i<4; i++) {
+				const v: Vector3 = v1.clone();	// get clone relative to v1
+				VectorUtils.rotatePointsFromPoint(-90 * i, [v], postCenter, new Vector3(0,0,1));
+				points.push(v);
+			}
+
+			// clone the first 4 points and grow them vertically
+			const tempPoints: Vector3[] = [];
+			const growVector: Vector3 = new Vector3(0,0,1).setLength(postHeight);
+			const lastFourPoints: Vector3[] = VectorUtils.getClones(points);	// clone array of should be 4 points
+			lastFourPoints.forEach( p => {
+				points.push(p.add(growVector));
+			});
+
+			// visual debug - add a point to represent the front - comment out for prod
+			// const frontDebug: Vector3 = VectorUtils.getCenterPoint(points[0], points[3]);
+			// points.push(frontDebug);
+			// points.push(postCenter);
+
+		}
+		return points;
+	}
+
+	/**
+	 * Returns 8 post points based off the post center. The post is assumed to be vertical facing up on XZ plane.
+	 * The first four points are the bottom corners of the post. the last 4 points are the top points.
+	 * From a top down view, the points are around the center point (the bottom 4 corners)
+	 * All Points are relative to the postCenter.
+	 *
+	 * @param postCenter represents the centroid of the 4 most bottom corners of the post
+	 * @param postWidth the post width measured from left to right
+	 * @param postFacingVector the front side of the post facing the other shape from a top down view
+	 * @param postHeight the post height measured vertically from bottom to top
+	 */
+	public createPostPointsAroundBottomCenterPointXZPlane(postCenter: Vector3, postWidth: number, postFacingVector: Vector3, postHeight: number): Vector3[] {
+		const points: Vector3[] = [];
+		postWidth = postWidth ? postWidth : 12;	// default width if not provided
+
+		if(postCenter && postFacingVector) {
+			postFacingVector.normalize();	// always use a normalized facing vector
+
+			// find the first corner point
+			// from a top down ortho view, the first corner is XX units down and XX units left from the center.
+			const downOffset: Vector3 = postFacingVector.clone().setLength(postWidth / 2);
+			const leftOffset: Vector3 = downOffset.clone();
+			// hint: a true vector normal rotates from (0,0,0)
+			VectorUtils.rotatePointsFromPoint(-90, [leftOffset], new Vector3(), new Vector3(0, 1, 0));
+
+			const v1: Vector3 = postCenter.clone();	// get a relative starting point to center
+			v1.add(downOffset);
+			v1.add(leftOffset);
+			points.push(v1);
+			// end of first corner point
+
+			// loop and find the 2nd-4th corner points in a clockwise fashion
+			for(let i = 1; i < 4; i++) {
+				const v: Vector3 = v1.clone();	// get clone relative to v1
+				VectorUtils.rotatePointsFromPoint(-90 * i, [v], postCenter, new Vector3(0, 1, 0));
+				points.push(v);
+			}
+
+			// clone the first 4 points and grow them vertically
+			const tempPoints: Vector3[] = [];
+			const growVector: Vector3 = new Vector3(0, 1, 0).setLength(postHeight);
+			points.forEach( p => {
+				tempPoints.push(p.clone().add(growVector));
+			});
+
+			// push the cloned 4 points back into the array
+			tempPoints.forEach(p => {
+				points.push(p);
+			});
+
+			// visual debug - add a point to represent the front - comment out for prod
+			// const frontDebug: Vector3 = VectorUtils.getCenterPoint(points[0], points[3]);
+			// points.push(frontDebug);
+			// points.push(postCenter);
+
+		}
+		return points;
+	}
 }

@@ -878,4 +878,50 @@ export class VectorUtils {
 			v.applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
 		}
 	}
+
+	public static getClones(points: Vector3[]): Vector3[] {
+		if(points){
+			const newPoints: Vector3[] = [];
+			points.forEach(p => {
+				newPoints.push(new Vector3(p.x, p.y, p.z));
+			});
+			return newPoints;
+		}
+		throw new Error('<< VectorUtils >> clone failed, points is null');
+	}
+
+	/**
+	 * Returns the array whose XYZ values will be rounded down to the specified decimal value.
+	 * Note: Use with caution! Values will be rounded and the passed in array by default will be mutated.
+	 *
+	 * Mainly used for debugging long floating numbers to view cleaner number values with lesser decimals.
+	 *
+	 * @param vecArray the array of vector3s you wish to trancate values on
+	 * @param decimalPlace range from 0-10, invalid values defaults to zero
+	 * @param mutateOriginal when false, the original array is cloned, only the cloned is modified and returned
+	 * @throws Error when array is empty or null
+	 */
+	public static roundAllXyzValues(vecArray: Vector3[], decimalPlace: number = 2, mutateOriginal: boolean = true): Vector3[] {
+		decimalPlace = Number.isInteger(decimalPlace) && decimalPlace > 0 && decimalPlace < 11 ? decimalPlace : 0;
+		if(vecArray && vecArray.length) {
+
+			let array: Vector3[];
+			if(mutateOriginal) {
+				array = vecArray;
+			} else {
+				array = VectorUtils.getClones(vecArray);
+			}
+
+			array = array.map(vec => {
+				vec.set(
+					parseFloat(vec.x.toFixed(decimalPlace)),
+					parseFloat(vec.y.toFixed(decimalPlace)),
+					parseFloat(vec.z.toFixed(decimalPlace))
+				);
+				return vec;
+			});
+			return array;
+		}
+		throw new Error('<< VectorUtils >> roundAllXyzValues failed, array is null or empty');
+	}
 }

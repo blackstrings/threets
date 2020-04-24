@@ -17,7 +17,8 @@ import {
 	DirectionalLightHelper,
 	GridHelper,
 	Mesh, MeshBasicMaterial, Plane, PlaneHelper,
-	Vector3
+	Vector3,
+    Quaternion
 } from 'three';
 import {CustomShape} from "./CustomShape";
 import {SceneSample} from './SceneSample';
@@ -35,6 +36,7 @@ export default class View {
 	private tween: TWEEN.Tween;
 
 	private meshes: Mesh[] = [];
+	private grid: GridHelper;
 
 	constructor(canvasElem: HTMLCanvasElement) {
 		this.enableDebugLogs = false;
@@ -46,6 +48,8 @@ export default class View {
 		//SceneSample.wallExample(this.scene);
 		//SceneSample.clippingPlaneExample(this.scene);
 
+
+		SceneSample.create4PointsAroundPointExample(this.scene);
 
 	}
 
@@ -76,13 +80,24 @@ export default class View {
 		this.scene = new THREE.Scene();
 		this.scene.background = new THREE.TextureLoader().load("./textures/bgnd.png");
 
-		const grid: GridHelper = new GridHelper(144, 12);
-		this.scene.add(grid);
+		this.grid = new GridHelper(144, 12);
+		this.useXYGrid();
+		// this.useXZGrid();
+		this.scene.add(this.grid);
 
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
 		// Set initial sizes
 		this.onWindowResize(window.innerWidth, window.innerHeight);
+	}
+
+	private useXYGrid(): void {
+		this.grid.setRotationFromQuaternion(new Quaternion()); // reset all rotations
+		this.grid.rotateX(Math.PI / 2);
+	}
+
+	private useXZGrid(): void {
+		this.grid.setRotationFromQuaternion(new Quaternion()); // reset all rotations
 	}
 
 	public onWindowResize(vpW: number, vpH: number): void {
