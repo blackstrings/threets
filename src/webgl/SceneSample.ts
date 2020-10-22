@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {Texture, RepeatWrapping, Vector3, ExtrudeGeometry, Scene} from 'three';
+import {Texture, RepeatWrapping, Vector3, ExtrudeGeometry, Scene, Matrix4} from 'three';
 import {ShapeFactory} from '../utils/ShapeFactory';
 import fs from './glsl/basicmulti.fs';
 import vs from './glsl/basicmulti.vs';
@@ -20,6 +20,8 @@ import {ShapeUtils} from '../utils/ShapeUtils';
 import {Plane} from 'three';
 import {PlaneHelper} from 'three';
 import {AxesHelper} from 'three';
+import {LineUtils} from '../utils/LineUtils';
+import {Curve} from '../utils/Curve';
 
 export class SceneSample {
 
@@ -470,4 +472,30 @@ export class SceneSample {
 		}
 		return points;
 	}
+
+	public static createChildInsideParentMaintainRotation(scene: Scene): void {
+		// create the parent
+		const p = LineUtils.createLineCurvedSegmentAtOrigin(new Vector3(), new Vector3(), Curve.CIRCLE, new Vector3(0,12));
+		const p1 = new AxesHelper(6);
+		p1.position.setX(12);
+		p.add(p1);
+		scene.add(p);
+
+		// create the child
+		const c = LineUtils.createLineSegment(new Vector3(), new Vector3(0,-6), new LineBasicMaterial({color:0xffffff}));
+		// add child to the parent with the correct orientation
+		// (use apply matrix on the child if you need to later the origin rotation)
+		p.add(c);
+
+		// animate hack to see the child stays at a certain direction
+		setInterval(() => {
+			// rotate the parent
+			p.rotateZ(Math.PI / 12);
+			// reset the matrix of the child
+			c.setRotationFromMatrix(new Matrix4());
+			// apply a reverse rotation value on the same axis the parent was roated from
+			c.rotateZ(-p.rotation.z);
+		}, 1000);
+	}
+
 }

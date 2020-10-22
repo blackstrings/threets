@@ -98,12 +98,13 @@ export class LineUtils {
 	 * param {Vector3} v1
 	 * param {Vector3} v2
 	 * param {Curve} curve
-	 * param {Vector3} controlPoint
+	 * param {Vector3} controlPoint - the Y value is the radius
 	 * param {LineBasicMaterial} material
 	 * throws {Error}
 	 * returns {Line}
 	 */
 	public static createLineCurvedSegmentAtOrigin(v1: Vector3, v2: Vector3, curve: Curve, controlPoint: Vector3,
+												  smoothness: number = 16,
 												  material?: THREE.LineBasicMaterial): Line {
 		let line: Line = null;
 		if(v1 && v2 && curve && controlPoint) {
@@ -122,7 +123,7 @@ export class LineUtils {
 				throw new Error('Failed to create line, curve type is invalid or cp2 is null');
 			}
 
-			const points: Vector3[] = VectorUtils.transformVector2sToVector3s(shape.getPoints(512));
+			const points: Vector3[] = VectorUtils.transformVector2sToVector3s(shape.getPoints(smoothness));
 			const lineGeo: Geometry = new Geometry();
 			lineGeo.vertices.push(...points);
 

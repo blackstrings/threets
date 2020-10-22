@@ -18,10 +18,13 @@ import {
 	GridHelper,
 	Mesh, MeshBasicMaterial, Plane, PlaneHelper,
 	Vector3,
-    Quaternion
+	Quaternion, Scene, Matrix4, LineBasicMaterial
 } from 'three';
 import {CustomShape} from "./CustomShape";
 import {SceneSample} from './SceneSample';
+import {LineUtils} from '../utils/LineUtils';
+import {ShapeUtils} from '../utils/ShapeUtils';
+import { Curve } from "../utils/Curve";
 
 export default class View {
 	private renderer: THREE.WebGLRenderer;
@@ -47,9 +50,12 @@ export default class View {
 		// SceneSample.flashCubeExample(this.scene, this.animatedObjs);
 		//SceneSample.wallExample(this.scene);
 		//SceneSample.clippingPlaneExample(this.scene);
+		//SceneSample.create4PointsAroundPointExample(this.scene);
+		//SceneSample.create4PointsAroundPointExample(this.scene);
+
+		//SceneSample.createChildInsideParentMaintainRotation(this.scene);
 
 
-		SceneSample.create4PointsAroundPointExample(this.scene);
 
 	}
 
